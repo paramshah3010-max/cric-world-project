@@ -18,6 +18,7 @@ npm-debug.log*
 
 # prisma
 prisma/*.db
+server/src/generated/
 
 # editor / OS
 .DS_Store
