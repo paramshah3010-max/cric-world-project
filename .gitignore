@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# env files (never commit real secrets)
+.env
+**/.env
+!.env.example
+
+# build output
+dist/
+build/
+**/dist/
+
+# logs
+*.log
+npm-debug.log*
+
+# prisma
+prisma/*.db
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
