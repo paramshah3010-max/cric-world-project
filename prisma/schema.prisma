@@ -1,0 +1,138 @@
+// ---------------------------------------------------------------------------
+// CRIC WORLD — Prisma schema (foundation)
+//
+// This is the initial data model. It intentionally stays simple. The schema is
+// designed so that scoring-related models (Innings, Over, Ball, BattingScore,
+// BowlingFigure, Partnership, FallOfWicket, Commentary) can be added later
+// without reworking these core tables.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// A platform user. Role controls what they can do (see Role enum).
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String // bcrypt hash — never the plain-text password
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  SCORER
+  ADMIN
+}
+
+// A cricket team.
+model Team {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  shortName String // e.g. "MUM"
+  country   String?
+  logoText  String? // original text-based badge, e.g. "MW"
+  primary   String? // brand accent color (hex)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  players     Player[]
+  homeMatches Match[]  @relation("HomeTeam")
+  awayMatches Match[]  @relation("AwayTeam")
+}
+
+// A player belonging to a team.
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  role      String // BATTER | BOWLER | ALL_ROUNDER | WICKET_KEEPER
+  battingStyle String?
+  bowlingStyle String?
+  country   String?
+  jerseyNo  Int?
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+}
+
+// A tournament / series that matches belong to.
+model Tournament {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  shortName String
+  season    String? // e.g. "2026"
+  format    String // T20 | ODI | TEST
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matches Match[]
+}
+
+// A physical venue where matches are played.
+model Venue {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  city      String?
+  country   String?
+  capacity  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matches Match[]
+}
+
+// A single match. Scores are stored as simple summary fields for now; detailed
+// ball-by-ball scoring models will reference this Match later.
+model Match {
+  id           String      @id @default(cuid())
+  name         String // e.g. "Match 12 — Group A"
+  format       String // T20 | ODI | TEST
+  status       MatchStatus @default(UPCOMING)
+  startTime    DateTime
+  result       String?
+
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+
+  venueId      String?
+  venue        Venue?     @relation(fields: [venueId], references: [id])
+
+  homeTeamId   String
+  homeTeam     Team       @relation("HomeTeam", fields: [homeTeamId], references: [id])
+
+  awayTeamId   String
+  awayTeam     Team       @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  // Simplified score summary (detailed innings come later).
+  homeRuns     Int?
+  homeWickets  Int?
+  homeOvers    Float?
+  awayRuns     Int?
+  awayWickets  Int?
+  awayOvers    Float?
+  tossWinner   String?
+  tossDecision String? // BAT | BOWL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([tournamentId])
+}
+
+enum MatchStatus {
+  LIVE
+  UPCOMING
+  COMPLETED
+}

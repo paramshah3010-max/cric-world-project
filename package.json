@@ -1,0 +1,27 @@
+{
+  "name": "cric-world",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CRIC WORLD — a premium cricket live-score and match-management platform (foundation).",
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "dev": "concurrently -n server,client -c cyan,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "prisma:generate": "npm --prefix server run prisma:generate",
+    "prisma:migrate": "npm --prefix server run prisma:migrate",
+    "prisma:seed": "npm --prefix server run prisma:seed",
+    "db:setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prisma": "^5.22.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}
