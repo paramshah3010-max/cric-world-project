@@ -27,20 +27,21 @@ export default function MatchesPage({ filter }: { filter: MatchStatus | 'ALL' })
 
   return (
     <div className="container-page py-12">
-      <h1 className="text-3xl font-black tracking-tight text-white">{title}</h1>
+      <p className="eyebrow mb-2">CRIC WORLD · Fixtures</p>
+      <h1 className="text-4xl font-extrabold tracking-tight text-white">{title}</h1>
       <p className="mt-2 text-slate-400">{subtitle}</p>
 
-      <div className="mt-6 flex flex-wrap gap-2 border-b border-charcoal-700 pb-4">
+      <div className="mt-7 flex flex-wrap gap-2 border-b border-white/[0.06] pb-5">
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             end
             className={({ isActive }) =>
-              `rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              `rounded-full px-5 py-2 text-sm font-semibold transition ${
                 isActive
-                  ? 'bg-cyan-brand text-charcoal-950'
-                  : 'bg-charcoal-800 text-slate-300 hover:text-white'
+                  ? 'bg-gold-sheen text-charcoal-950 shadow-gold'
+                  : 'border border-white/10 bg-white/[0.03] text-slate-300 hover:border-gold-brand/40 hover:text-white'
               }`
             }
           >

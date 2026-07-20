@@ -13,7 +13,7 @@ type Tab = (typeof TABS)[number];
 
 function TeamLine({ team }: { team: Match['teams']['home'] }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-charcoal-900/60 p-4">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.05] bg-white/[0.03] p-4">
       <div className="flex items-center gap-3">
         <TeamBadge team={team} />
         <div>
@@ -42,7 +42,7 @@ function SummaryTab({ match }: { match: Match }) {
         <TeamLine team={match.teams.home} />
         <TeamLine team={match.teams.away} />
       </div>
-      <dl className="card divide-y divide-charcoal-700">
+      <dl className="card divide-y divide-white/[0.06]">
         {facts.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-4 px-5 py-3">
             <dt className="text-sm text-slate-400">{k}</dt>
@@ -72,14 +72,14 @@ export default function MatchDetailsPage() {
 
   return (
     <div className="container-page py-10">
-      <Link to="/matches" className="text-sm text-slate-400 hover:text-cyan-brand">
+      <Link to="/matches" className="text-sm text-slate-400 transition hover:text-gold-brand">
         ← Back to matches
       </Link>
 
       <div className="card mt-4 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-brand">
+            <p className="text-[11px] font-semibold uppercase tracking-luxe text-gold-brand/90">
               {match.tournament?.name} · {match.format}
             </p>
             <h1 className="mt-1 text-2xl font-black text-white">
@@ -93,13 +93,15 @@ export default function MatchDetailsPage() {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2 border-b border-charcoal-700 pb-3">
+      <div className="mt-6 flex flex-wrap gap-2 border-b border-white/[0.06] pb-3">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-              tab === t ? 'bg-cyan-brand text-charcoal-950' : 'text-slate-300 hover:text-white'
+            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+              tab === t
+                ? 'bg-gold-sheen text-charcoal-950 shadow-gold'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             {t}

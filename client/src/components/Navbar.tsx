@@ -18,8 +18,10 @@ const NAV_ITEMS: { label: string; to: string }[] = [
 ];
 
 function linkClass({ isActive }: { isActive: boolean }) {
-  return `rounded-lg px-3 py-2 text-sm font-medium transition ${
-    isActive ? 'text-cyan-brand' : 'text-slate-300 hover:text-white'
+  return `relative px-3 py-2 text-sm font-medium transition-colors after:absolute after:inset-x-3 after:-bottom-0.5 after:h-px after:origin-left after:bg-gold-sheen after:transition-transform ${
+    isActive
+      ? 'text-white after:scale-x-100'
+      : 'text-slate-400 hover:text-white after:scale-x-0 hover:after:scale-x-100'
   }`;
 }
 
@@ -28,7 +30,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-charcoal-700/80 bg-charcoal-950/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-charcoal-950/70 backdrop-blur-xl">
       <nav className="container-page flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <Logo />
@@ -44,26 +46,26 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <button
             aria-label="Search"
-            className="hidden rounded-lg p-2 text-slate-300 transition hover:bg-charcoal-800 hover:text-white sm:inline-flex"
+            className="hidden rounded-full p-2 text-slate-400 transition hover:bg-white/[0.06] hover:text-gold-brand sm:inline-flex"
           >
             <SearchIcon />
           </button>
           <button
             aria-label="Notifications"
-            className="hidden rounded-lg p-2 text-slate-300 transition hover:bg-charcoal-800 hover:text-white sm:inline-flex"
+            className="hidden rounded-full p-2 text-slate-400 transition hover:bg-white/[0.06] hover:text-gold-brand sm:inline-flex"
           >
             <BellIcon />
           </button>
 
           {user ? (
             <div className="hidden items-center gap-3 sm:flex">
-              <div className="flex items-center gap-2 rounded-full bg-charcoal-800 py-1 pl-1 pr-3">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-brand/20 text-xs font-bold text-cyan-brand">
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-3">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold-sheen text-xs font-bold text-charcoal-950">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
                 <span className="text-sm font-medium text-white">{user.name.split(' ')[0]}</span>
               </div>
-              <button className="btn-ghost !px-3 !py-2" onClick={logout}>
+              <button className="btn-ghost !px-4 !py-2" onClick={logout}>
                 Logout
               </button>
             </div>
@@ -75,7 +77,7 @@ export default function Navbar() {
 
           <button
             aria-label="Toggle menu"
-            className="rounded-lg p-2 text-slate-200 hover:bg-charcoal-800 lg:hidden"
+            className="rounded-full p-2 text-slate-200 hover:bg-white/[0.06] lg:hidden"
             onClick={() => setOpen((o) => !o)}
           >
             {open ? <CloseIcon /> : <MenuIcon />}
@@ -85,7 +87,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {open && (
-        <div className="border-t border-charcoal-700 bg-charcoal-950 lg:hidden">
+        <div className="border-t border-white/[0.06] bg-charcoal-950/95 backdrop-blur-xl lg:hidden">
           <div className="container-page flex flex-col gap-1 py-4">
             {NAV_ITEMS.map((item) => (
               <NavLink
@@ -98,7 +100,7 @@ export default function Navbar() {
                 {item.label}
               </NavLink>
             ))}
-            <div className="mt-3 flex gap-2 border-t border-charcoal-700 pt-4">
+            <div className="mt-3 flex gap-2 border-t border-white/[0.06] pt-4">
               {user ? (
                 <button
                   className="btn-ghost flex-1"

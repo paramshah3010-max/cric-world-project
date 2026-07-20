@@ -58,7 +58,7 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-slate-400">
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-cyan-brand hover:underline">
+          <Link to="/login" className="font-semibold text-gold-brand hover:underline">
             Login
           </Link>
         </p>
@@ -88,7 +88,7 @@ function Field({
         value={value}
         required
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-charcoal-600 bg-charcoal-900 px-4 py-2.5 text-white outline-none transition focus:border-cyan-brand focus:ring-2 focus:ring-cyan-brand/40"
+        className="w-full rounded-xl border border-white/10 bg-charcoal-900/80 px-4 py-2.5 text-white outline-none transition focus:border-gold-brand/60 focus:ring-2 focus:ring-gold-brand/30"
       />
       {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
     </label>

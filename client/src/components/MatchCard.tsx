@@ -11,10 +11,12 @@ function TeamRow({ team }: { team: Match['teams']['home'] }) {
         <TeamBadge team={team} />
         <div>
           <p className="font-semibold text-white">{team.name}</p>
-          <p className="text-xs text-slate-400">{team.shortName}</p>
+          <p className="text-[11px] uppercase tracking-widest text-slate-500">{team.shortName}</p>
         </div>
       </div>
-      <p className="font-mono text-sm font-semibold text-slate-200">{formatScore(team.score)}</p>
+      <p className="font-display text-sm font-bold tabular-nums text-slate-100">
+        {formatScore(team.score)}
+      </p>
     </div>
   );
 }
@@ -23,14 +25,18 @@ export default function MatchCard({ match }: { match: Match }) {
   return (
     <Link
       to={`/matches/${match.id}`}
-      className="card group block p-5 transition hover:-translate-y-0.5 hover:border-cyan-brand/50 hover:shadow-glow"
+      className="group relative block overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] p-5 shadow-luxe backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-gold-brand/40 hover:shadow-gold"
     >
+      <div className="sheen" />
+      {/* top accent line */}
+      <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-brand/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold uppercase tracking-wide text-cyan-brand">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-widest text-gold-brand/90">
             {match.tournament?.shortName ?? 'Fixture'} · {match.format}
           </p>
-          <p className="truncate text-xs text-slate-400">{match.name}</p>
+          <p className="truncate text-xs text-slate-500">{match.name}</p>
         </div>
         <StatusBadge status={match.status} />
       </div>
@@ -40,9 +46,9 @@ export default function MatchCard({ match }: { match: Match }) {
         <TeamRow team={match.teams.away} />
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-charcoal-700 pt-3 text-xs text-slate-400">
+      <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs text-slate-500">
         <span className="truncate">{match.venue?.name ?? 'Venue TBD'}</span>
-        <span>
+        <span className="shrink-0 pl-2 text-right">
           {match.status === 'COMPLETED'
             ? (match.result ?? 'Result')
             : match.status === 'LIVE'

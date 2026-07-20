@@ -2,7 +2,7 @@ import type { MatchStatus } from '../utils/types';
 
 const styles: Record<MatchStatus, string> = {
   LIVE: 'bg-red-500/15 text-red-400 ring-1 ring-red-500/30',
-  UPCOMING: 'bg-cyan-brand/15 text-cyan-brand ring-1 ring-cyan-brand/30',
+  UPCOMING: 'bg-gold-brand/15 text-gold-brand ring-1 ring-gold-brand/30',
   COMPLETED: 'bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30',
 };
 

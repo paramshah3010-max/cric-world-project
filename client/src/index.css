@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,11 +9,19 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-charcoal-950 text-slate-200 antialiased;
+    @apply bg-charcoal-950 text-slate-300 antialiased;
     background-image:
-      radial-gradient(60% 40% at 80% -10%, rgba(0, 229, 255, 0.08), transparent),
-      radial-gradient(50% 40% at 0% 0%, rgba(255, 201, 74, 0.06), transparent);
+      radial-gradient(55% 40% at 82% -10%, rgba(34, 231, 255, 0.09), transparent 60%),
+      radial-gradient(45% 40% at 0% 0%, rgba(233, 196, 106, 0.07), transparent 55%);
     background-attachment: fixed;
+  }
+  ::selection {
+    @apply bg-gold-brand/30 text-white;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
   }
 }
 
@@ -21,34 +29,83 @@
   .container-page {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
+
+  /* Small uppercase label — the "luxury" eyebrow. */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-luxe text-gold-brand/90;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-brand/60 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold-brand/50 disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-cyan-brand text-charcoal-950 hover:shadow-glow hover:brightness-110;
+    @apply btn bg-gold-sheen text-charcoal-950 shadow-gold hover:brightness-105 hover:shadow-[0_0_40px_-6px_rgba(233,196,106,0.65)];
   }
   .btn-ghost {
-    @apply btn border border-charcoal-600 bg-charcoal-800/60 text-slate-200 hover:border-cyan-brand/60 hover:text-white;
+    @apply btn border border-white/10 bg-white/[0.03] text-slate-100 backdrop-blur hover:border-gold-brand/50 hover:text-white;
   }
+
+  /* Glass card with a hairline gradient border feel. */
   .card {
-    @apply rounded-2xl border border-charcoal-700 bg-charcoal-800/70 backdrop-blur;
+    @apply relative rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] shadow-luxe backdrop-blur-xl;
   }
+
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider;
   }
+
+  /* Gradient text used for hero / brand accents. */
+  .text-gradient-gold {
+    @apply bg-gold-sheen bg-clip-text text-transparent;
+  }
+  .text-gradient-cyan-gold {
+    @apply bg-cyan-gold bg-clip-text text-transparent;
+  }
+
+  /* Thin luxe divider. */
+  .rule {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+
   .skeleton {
-    @apply relative overflow-hidden rounded-md bg-charcoal-700;
+    @apply relative overflow-hidden rounded-md bg-white/[0.05];
   }
   .skeleton::after {
     content: '';
     @apply absolute inset-0 -translate-x-full;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
-    animation: shimmer 1.5s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+@layer utilities {
+  /* Subtle sheen swipe used on hover for premium surfaces. */
+  .sheen {
+    @apply pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit];
+  }
+  .sheen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70%);
+  }
+  .group:hover .sheen::before {
+    animation: sheen-slide 0.9s ease-out;
   }
 }
 
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+@keyframes sheen-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  60%,
+  100% {
+    transform: translateX(220%);
   }
 }

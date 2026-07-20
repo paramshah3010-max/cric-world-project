@@ -50,11 +50,11 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-slate-400">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="font-semibold text-cyan-brand hover:underline">
+          <Link to="/register" className="font-semibold text-gold-brand hover:underline">
             Register
           </Link>
         </p>
-        <p className="mt-4 rounded-lg bg-charcoal-900/60 px-3 py-2 text-center text-xs text-slate-500">
+        <p className="mt-4 rounded-lg border border-white/[0.05] bg-white/[0.03] px-3 py-2 text-center text-xs text-slate-500">
           Demo login prefilled · user@cricworld.dev / password123
         </p>
       </div>
@@ -81,7 +81,7 @@ function Field({
         value={value}
         required
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-charcoal-600 bg-charcoal-900 px-4 py-2.5 text-white outline-none transition focus:border-cyan-brand focus:ring-2 focus:ring-cyan-brand/40"
+        className="w-full rounded-xl border border-white/10 bg-charcoal-900/80 px-4 py-2.5 text-white outline-none transition focus:border-gold-brand/60 focus:ring-2 focus:ring-gold-brand/30"
       />
     </label>
   );

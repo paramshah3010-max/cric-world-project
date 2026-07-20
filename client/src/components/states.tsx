@@ -22,7 +22,7 @@ export function MatchCardSkeleton() {
           </div>
         ))}
       </div>
-      <div className="mt-4 border-t border-charcoal-700 pt-3">
+      <div className="mt-4 border-t border-white/[0.06] pt-3">
         <div className="skeleton h-3 w-full" />
       </div>
     </div>
@@ -32,7 +32,7 @@ export function MatchCardSkeleton() {
 export function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="card flex flex-col items-center justify-center gap-2 p-12 text-center">
-      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-charcoal-700 text-2xl">
+      <div className="mb-1 flex h-14 w-14 items-center justify-center rounded-full border border-gold-brand/20 bg-white/[0.04] text-2xl">
         🏏
       </div>
       <p className="text-lg font-semibold text-white">{title}</p>
@@ -68,10 +68,13 @@ export function SectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-4">
+    <div className="mb-6 flex items-end justify-between gap-4">
       <div>
-        <h2 className="text-xl font-bold text-white sm:text-2xl">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+        {subtitle && <p className="eyebrow mb-2">{subtitle}</p>}
+        <h2 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <span className="h-6 w-1 rounded-full bg-gold-sheen" />
+          {title}
+        </h2>
       </div>
       {action}
     </div>
