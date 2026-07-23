@@ -205,6 +205,133 @@ function ScorecardTab({ scorecard }: { scorecard: Scorecard }) {
   );
 }
 
+// ── Statistics tab ──────────────────────────────────────────────────────────
+
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-luxe text-slate-500">{label}</p>
+      <p className="mt-1 font-mono text-lg font-bold text-white">{value}</p>
+      {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+    </div>
+  );
+}
+
+function InningsStats({ inn }: { inn: InningsData }) {
+  const runRate = inn.totalOvers > 0 ? (inn.totalRuns / inn.totalOvers).toFixed(2) : '—';
+  const totalFours = inn.battingScorecard.reduce((s, b) => s + b.fours, 0);
+  const totalSixes = inn.battingScorecard.reduce((s, b) => s + b.sixes, 0);
+  const boundaries = totalFours + totalSixes;
+  const extras = inn.byes + inn.legByes + inn.wides + inn.noBalls + inn.penalties;
+
+  const topBatter = [...inn.battingScorecard].sort((a, b) => b.runs - a.runs)[0];
+  const topBowler = [...inn.bowlingScorecard].sort((a, b) => b.wickets - a.wickets || a.economy - b.economy)[0];
+  const bestPartnership = [...inn.partnerships].sort((a, b) => b.runs - a.runs)[0];
+
+  return (
+    <div className="card p-5 space-y-5">
+      <div className="flex items-center gap-3">
+        <TeamBadge team={inn.battingTeam} />
+        <div>
+          <p className="font-bold text-white">{inn.battingTeam?.name}</p>
+          <p className="text-xs text-slate-400">
+            {inn.totalRuns}/{inn.totalWickets} in {inn.totalOvers} overs &middot; RR {runRate}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="Run Rate" value={runRate} sub="runs/over" />
+        <StatCard label="Boundaries" value={String(boundaries)} sub={`${totalFours}×4  ${totalSixes}×6`} />
+        <StatCard label="Extras" value={String(extras)} sub={`b${inn.byes} lb${inn.legByes} w${inn.wides} nb${inn.noBalls}`} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {topBatter && (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-luxe text-slate-500">Top Batter</p>
+            <p className="mt-1 font-semibold text-white">{topBatter.player.name}</p>
+            <div className="mt-2 flex gap-4 text-sm">
+              <span className="font-mono text-white">{topBatter.runs} <span className="text-slate-400">runs</span></span>
+              <span className="font-mono text-white">{topBatter.ballsFaced} <span className="text-slate-400">balls</span></span>
+              <span className="font-mono text-white">{topBatter.strikeRate.toFixed(0)} <span className="text-slate-400">SR</span></span>
+            </div>
+          </div>
+        )}
+        {topBowler && (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-luxe text-slate-500">Top Bowler</p>
+            <p className="mt-1 font-semibold text-white">{topBowler.player.name}</p>
+            <div className="mt-2 flex gap-4 text-sm">
+              <span className="font-mono text-white">{topBowler.wickets} <span className="text-slate-400">wkts</span></span>
+              <span className="font-mono text-white">{topBowler.runsConceded} <span className="text-slate-400">runs</span></span>
+              <span className="font-mono text-white">{topBowler.economy.toFixed(1)} <span className="text-slate-400">econ</span></span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {bestPartnership && (
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-luxe text-slate-500">Best Partnership</p>
+          <p className="mt-1 text-sm text-white">
+            <span className="font-semibold">{bestPartnership.batter1.name}</span>
+            <span className="text-slate-400"> & </span>
+            <span className="font-semibold">{bestPartnership.batter2.name}</span>
+            <span className="ml-2 font-mono text-gold-brand">{bestPartnership.runs}</span>
+            <span className="ml-1 text-slate-400">runs ({bestPartnership.ballsFaced} balls)</span>
+          </p>
+        </div>
+      )}
+
+      {inn.fallOfWickets.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-luxe text-slate-500">Wickets Timeline</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {inn.fallOfWickets.map((f, i) => (
+              <span key={f.id} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-sm">
+                <span className="text-slate-400">W{i + 1}</span>
+                <span className="font-mono text-white">{f.teamScore}</span>
+                <span className="text-xs text-slate-500">{f.player.name}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-4 text-xs text-slate-500 border-t border-white/[0.06] pt-4">
+        <span>Fours: <span className="text-slate-300">{totalFours}</span></span>
+        <span>Sixes: <span className="text-slate-300">{totalSixes}</span></span>
+        <span>Extras: <span className="text-slate-300">{extras}</span></span>
+        <span>Wickets: <span className="text-slate-300">{inn.totalWickets}</span></span>
+      </div>
+    </div>
+  );
+}
+
+function StatisticsTab({ scorecard }: { scorecard: Scorecard }) {
+  return (
+    <div className="space-y-6">
+      {scorecard.result && (
+        <div className="card p-5">
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-luxe text-slate-500">Match Result</h4>
+          <span className="rounded-full border border-gold-brand/20 bg-gold-brand/5 px-4 py-1.5 font-mono text-sm font-medium text-gold-brand">
+            {scorecard.result}
+          </span>
+        </div>
+      )}
+
+      {scorecard.innings.map((inn) => (
+        <InningsStats key={inn.id} inn={inn} />
+      ))}
+
+      {scorecard.innings.length === 0 && (
+        <EmptyState title="No statistics available" message="This match doesn't have any innings data yet." />
+      )}
+    </div>
+  );
+}
+
 // ── Commentary tab ──────────────────────────────────────────────────────────
 
 const EVENT_STYLE: Record<string, string> = {
@@ -378,6 +505,19 @@ export default function MatchDetailsPage() {
             <ErrorState message={scError} />
           ) : scorecard ? (
             <ScorecardTab scorecard={scorecard} />
+          ) : null
+        ) : tab === 'Statistics' ? (
+          scLoading ? (
+            <>
+              <SectionHeader title="Statistics" subtitle="Loading..." />
+              <div className="space-y-4">
+                {[0, 1].map((i) => <div key={i} className="skeleton h-48 w-full rounded-2xl" />)}
+              </div>
+            </>
+          ) : scError ? (
+            <ErrorState message={scError} />
+          ) : scorecard ? (
+            <StatisticsTab scorecard={scorecard} />
           ) : null
         ) : tab === 'Commentary' ? (
           commLoading ? (
