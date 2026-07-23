@@ -3,6 +3,7 @@ import matchRoutes from './match.routes.js';
 import authRoutes from './auth.routes.js';
 import inningsRoutes from './innings.routes.js';
 import scoringRoutes from './scoring.routes.js';
+import squadRoutes from './squad.routes.js';
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use('/matches', matchRoutes);
 router.use('/auth', authRoutes);
 router.use('/', inningsRoutes);
 router.use('/', scoringRoutes);
+router.use('/', squadRoutes);
 
 export default router;

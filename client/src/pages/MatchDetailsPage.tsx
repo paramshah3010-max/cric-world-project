@@ -6,7 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import TeamBadge from '../components/TeamBadge';
 import { EmptyState, ErrorState, SectionHeader } from '../components/states';
 import { formatScore, formatDateTime } from '../utils/format';
-import type { Match, Scorecard, BattingScoreData, BowlingFigureData, FallOfWicketData, InningsData, CommentaryData } from '../utils/types';
+import type { Match, Scorecard, BattingScoreData, BowlingFigureData, FallOfWicketData, InningsData, CommentaryData, SquadsData, SquadPlayer, TeamSquad } from '../utils/types';
 
 const TABS = ['Summary', 'Scorecard', 'Commentary', 'Statistics', 'Squads'] as const;
 type Tab = (typeof TABS)[number];
@@ -332,6 +332,76 @@ function StatisticsTab({ scorecard }: { scorecard: Scorecard }) {
   );
 }
 
+// ── Squads tab ─────────────────────────────────────────────────────────────
+
+const ROLE_BADGE: Record<string, string> = {
+  BATTER: 'text-amber-400',
+  BOWLER: 'text-cyan-400',
+  ALL_ROUNDER: 'text-emerald-400',
+  WICKET_KEEPER: 'text-purple-400',
+};
+
+function SquadPlayerRow({ player }: { player: SquadPlayer }) {
+  return (
+    <tr className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+      <td className="py-2 pr-2 text-center font-mono text-sm text-slate-500">{player.jerseyNo ?? '—'}</td>
+      <td className="py-2 pr-2">
+        <p className="font-medium text-white">{player.name}</p>
+        <p className="text-xs text-slate-500">{player.country ?? ''}</p>
+      </td>
+      <td className="py-2 px-3">
+        <span className={`text-xs font-semibold ${ROLE_BADGE[player.role] || 'text-slate-400'}`}>
+          {player.role.replace(/_/g, ' ')}
+        </span>
+      </td>
+      <td className="py-2 px-3 text-xs text-slate-400">{player.battingStyle ?? '—'}</td>
+      <td className="py-2 pl-3 text-xs text-slate-400">{player.bowlingStyle ?? '—'}</td>
+    </tr>
+  );
+}
+
+function TeamSquadCard({ team }: { team: TeamSquad }) {
+  return (
+    <div className="card p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <TeamBadge team={team} />
+        <div>
+          <p className="font-bold text-white">{team.name}</p>
+          <p className="text-xs text-slate-400">{team.players.length} players</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-white/[0.08] text-[11px] font-semibold uppercase tracking-luxe text-slate-500">
+              <th className="pb-2 pr-2 text-center w-10">#</th>
+              <th className="pb-2 pr-2">Player</th>
+              <th className="pb-2 px-3">Role</th>
+              <th className="pb-2 px-3">Batting</th>
+              <th className="pb-2 pl-3">Bowling</th>
+            </tr>
+          </thead>
+          <tbody>
+            {team.players.map((p) => (
+              <SquadPlayerRow key={p.id} player={p} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SquadsTab({ squads }: { squads: SquadsData }) {
+  return (
+    <div className="space-y-6">
+      <TeamSquadCard team={squads.homeTeam} />
+      <TeamSquadCard team={squads.awayTeam} />
+    </div>
+  );
+}
+
 // ── Commentary tab ──────────────────────────────────────────────────────────
 
 const EVENT_STYLE: Record<string, string> = {
@@ -441,6 +511,7 @@ export default function MatchDetailsPage() {
   const { data: match, loading, error } = useAsync(() => matchesApi.byId(id!), [id]);
   const { data: scorecard, loading: scLoading, error: scError } = useAsync(() => matchesApi.scorecard(id!), [id]);
   const { data: commentary, loading: commLoading, error: commError } = useAsync(() => matchesApi.commentary(id!), [id]);
+  const { data: squads, loading: sqLoading, error: sqError } = useAsync(() => matchesApi.squads(id!), [id]);
 
   if (loading) {
     return (
@@ -533,6 +604,19 @@ export default function MatchDetailsPage() {
             <ErrorState message={commError} />
           ) : commentary ? (
             <CommentaryTab commentary={commentary} />
+          ) : null
+        ) : tab === 'Squads' ? (
+          sqLoading ? (
+            <>
+              <SectionHeader title="Squads" subtitle="Loading..." />
+              <div className="space-y-4">
+                {[0, 1].map((i) => <div key={i} className="skeleton h-48 w-full rounded-2xl" />)}
+              </div>
+            </>
+          ) : sqError ? (
+            <ErrorState message={sqError} />
+          ) : squads ? (
+            <SquadsTab squads={squads} />
           ) : null
         ) : (
           <>

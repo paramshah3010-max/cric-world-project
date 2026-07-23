@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Match, MatchStatus, Scorecard, CommentaryData } from '../utils/types';
+import type { Match, MatchStatus, Scorecard, CommentaryData, SquadsData } from '../utils/types';
 
 const statusPath: Record<MatchStatus, string> = {
   LIVE: '/matches/live',
@@ -19,4 +19,5 @@ export const matchesApi = {
     const qs = params.toString();
     return api.get<CommentaryData[]>(`/matches/${id}/commentary${qs ? '?' + qs : ''}`);
   },
+  squads: (id: string) => api.get<SquadsData>(`/matches/${id}/squads`),
 };

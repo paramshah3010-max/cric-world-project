@@ -137,6 +137,31 @@ export interface Scorecard {
   innings: InningsData[];
 }
 
+export interface SquadPlayer {
+  id: string;
+  name: string;
+  role: string;
+  battingStyle: string | null;
+  bowlingStyle: string | null;
+  country: string | null;
+  jerseyNo: number | null;
+}
+
+export interface TeamSquad {
+  id: string;
+  name: string;
+  shortName: string;
+  logoText: string | null;
+  primary: string | null;
+  players: SquadPlayer[];
+}
+
+export interface SquadsData {
+  id: string;
+  homeTeam: TeamSquad;
+  awayTeam: TeamSquad;
+}
+
 export interface CommentaryData {
   id: string;
   matchId: string;
