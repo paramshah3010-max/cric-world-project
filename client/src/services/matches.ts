@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Match, MatchStatus, Scorecard } from '../utils/types';
+import type { Match, MatchStatus, Scorecard, CommentaryData } from '../utils/types';
 
 const statusPath: Record<MatchStatus, string> = {
   LIVE: '/matches/live',
@@ -12,4 +12,11 @@ export const matchesApi = {
   byStatus: (status: MatchStatus) => api.get<Match[]>(statusPath[status]),
   byId: (id: string) => api.get<Match>(`/matches/${id}`),
   scorecard: (id: string) => api.get<Scorecard>(`/matches/${id}/scorecard`),
+  commentary: (id: string, inningsId?: string, limit?: number) => {
+    const params = new URLSearchParams();
+    if (inningsId) params.set('inningsId', inningsId);
+    if (limit) params.set('limit', String(limit));
+    const qs = params.toString();
+    return api.get<CommentaryData[]>(`/matches/${id}/commentary${qs ? '?' + qs : ''}`);
+  },
 };

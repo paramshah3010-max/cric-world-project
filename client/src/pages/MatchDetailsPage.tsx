@@ -6,7 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import TeamBadge from '../components/TeamBadge';
 import { EmptyState, ErrorState, SectionHeader } from '../components/states';
 import { formatScore, formatDateTime } from '../utils/format';
-import type { Match, Scorecard, BattingScoreData, BowlingFigureData, FallOfWicketData, InningsData } from '../utils/types';
+import type { Match, Scorecard, BattingScoreData, BowlingFigureData, FallOfWicketData, InningsData, CommentaryData } from '../utils/types';
 
 const TABS = ['Summary', 'Scorecard', 'Commentary', 'Statistics', 'Squads'] as const;
 type Tab = (typeof TABS)[number];
@@ -205,11 +205,115 @@ function ScorecardTab({ scorecard }: { scorecard: Scorecard }) {
   );
 }
 
+// ── Commentary tab ──────────────────────────────────────────────────────────
+
+const EVENT_STYLE: Record<string, string> = {
+  WICKET: 'bg-red-500/15 text-red-400 ring-1 ring-red-500/30',
+  MILESTONE: 'bg-gold-brand/15 text-gold-brand ring-1 ring-gold-brand/30',
+  START_OF_OVER: 'bg-cyan-400/10 text-cyan-400 ring-1 ring-cyan-400/20',
+  END_OF_OVER: 'bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30',
+  INNINGS_BREAK: 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/30',
+  MATCH_EVENT: 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
+  DELIVERY: '',
+};
+
+const EVENT_LABEL: Record<string, string> = {
+  WICKET: 'WICKET',
+  MILESTONE: 'MILE',
+  START_OF_OVER: 'START',
+  END_OF_OVER: 'END',
+  INNINGS_BREAK: 'BREAK',
+  MATCH_EVENT: 'EVENT',
+  DELIVERY: '',
+};
+
+function CommentaryTab({ commentary }: { commentary: CommentaryData[] }) {
+  // Group by innings
+  const groups: Record<string, CommentaryData[]> = {};
+  const ungrouped: CommentaryData[] = [];
+
+  for (const c of commentary) {
+    if (c.inningsId) {
+      (groups[c.inningsId] ??= []).push(c);
+    } else {
+      ungrouped.push(c);
+    }
+  }
+
+  const inningsItems = Object.entries(groups).map(([id, items]) => ({ id, items }));
+
+  return (
+    <div className="space-y-6">
+      {/* Match-level events first (newest first) */}
+      {ungrouped.length > 0 && (
+        <div className="space-y-2">
+          {ungrouped.map((c) => (
+            <CommentaryRow key={c.id} c={c} />
+          ))}
+        </div>
+      )}
+
+      {/* Innings groups */}
+      {inningsItems.map((group) => (
+        <div key={group.id} className="card p-5">
+          <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-luxe text-slate-500">
+            Innings
+          </h4>
+          <div className="space-y-2 divide-y divide-white/[0.04]">
+            {group.items.map((c) => (
+              <CommentaryRow key={c.id} c={c} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {commentary.length === 0 && (
+        <EmptyState title="No commentary yet" message="Ball-by-ball commentary will appear here once the match is underway." />
+      )}
+    </div>
+  );
+}
+
+function CommentaryRow({ c }: { c: CommentaryData }) {
+  const badge = EVENT_LABEL[c.eventType] || c.eventType;
+  const style = EVENT_STYLE[c.eventType] || '';
+  const isWicket = c.eventType === 'WICKET';
+  const isMilestone = c.eventType === 'MILESTONE';
+  const isMatch = c.eventType === 'MATCH_EVENT' || c.eventType === 'INNINGS_BREAK';
+
+  return (
+    <div className={`flex items-start gap-3 py-2 ${isWicket ? 'rounded-lg bg-red-500/[0.04] px-2' : ''}`}>
+      {/* Over label or timestamp */}
+      <div className="flex shrink-0 flex-col items-center gap-0.5 pt-0.5">
+        {c.overLabel ? (
+          <span className="font-mono text-xs text-slate-500">{c.overLabel}</span>
+        ) : (
+          <span className="text-[10px] text-slate-600">{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        )}
+        {badge && (
+          <span className={`chip text-[9px] px-1.5 py-0 ${style}`}>{badge}</span>
+        )}
+      </div>
+
+      {/* Text */}
+      <p className={`text-sm leading-relaxed ${
+        isWicket ? 'font-semibold text-red-300' :
+        isMilestone ? 'font-semibold text-gold-brand' :
+        isMatch ? 'font-medium text-slate-200' :
+        'text-slate-400'
+      }`}>
+        {c.text}
+      </p>
+    </div>
+  );
+}
+
 export default function MatchDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>('Summary');
   const { data: match, loading, error } = useAsync(() => matchesApi.byId(id!), [id]);
   const { data: scorecard, loading: scLoading, error: scError } = useAsync(() => matchesApi.scorecard(id!), [id]);
+  const { data: commentary, loading: commLoading, error: commError } = useAsync(() => matchesApi.commentary(id!), [id]);
 
   if (loading) {
     return (
@@ -274,6 +378,21 @@ export default function MatchDetailsPage() {
             <ErrorState message={scError} />
           ) : scorecard ? (
             <ScorecardTab scorecard={scorecard} />
+          ) : null
+        ) : tab === 'Commentary' ? (
+          commLoading ? (
+            <>
+              <SectionHeader title="Commentary" subtitle="Loading..." />
+              <div className="space-y-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="skeleton h-12 w-full rounded-xl" />
+                ))}
+              </div>
+            </>
+          ) : commError ? (
+            <ErrorState message={commError} />
+          ) : commentary ? (
+            <CommentaryTab commentary={commentary} />
           ) : null
         ) : (
           <>

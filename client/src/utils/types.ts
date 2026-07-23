@@ -136,3 +136,15 @@ export interface Scorecard {
   awayTeam: MatchTeam;
   innings: InningsData[];
 }
+
+export interface CommentaryData {
+  id: string;
+  matchId: string;
+  inningsId: string | null;
+  overId: string | null;
+  ballId: string | null;
+  overLabel: string | null;
+  text: string;
+  eventType: string;
+  timestamp: string;
+}
