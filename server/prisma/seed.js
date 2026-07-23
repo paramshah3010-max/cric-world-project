@@ -13,14 +13,358 @@ const prisma = new PrismaClient();
 
 const hoursFromNow = (h) => new Date(Date.now() + h * 60 * 60 * 1000);
 
+// ---------------------------------------------------------------------------
+// Phase 2A scoring demo — Harbour Kings vs Summit Titans (T20, completed)
+// Idempotent: removes + recreates only scoring data for this specific match.
+// ---------------------------------------------------------------------------
+async function seedPhase2A() {
+  console.log('[seed:phase2a] Looking up demo match...');
+
+  const hkTeam = await prisma.team.findUnique({ where: { name: 'Harbour Kings' } });
+  const stTeam = await prisma.team.findUnique({ where: { name: 'Summit Titans' } });
+
+  if (!hkTeam || !stTeam) {
+    console.log('[seed:phase2a] Harbour Kings or Summit Titans not found — skipping scoring seed.');
+    return;
+  }
+
+  const demoMatch = await prisma.match.findFirst({
+    where: { homeTeamId: hkTeam.id, awayTeamId: stTeam.id, status: 'COMPLETED' },
+  });
+
+  if (!demoMatch) {
+    console.log('[seed:phase2a] HK vs ST completed match not found — skipping scoring seed.');
+    return;
+  }
+
+  // Remove existing Phase 2A data for this match (idempotent).
+  const existingInnings = await prisma.innings.findMany({
+    where: { matchId: demoMatch.id },
+    select: { id: true },
+  });
+  const inningsIds = existingInnings.map((i) => i.id);
+
+  if (inningsIds.length > 0) {
+    console.log('[seed:phase2a] Clearing existing scoring data for this match...');
+    await prisma.commentary.deleteMany({ where: { matchId: demoMatch.id } });
+    for (const iid of inningsIds) {
+      await prisma.fallOfWicket.deleteMany({ where: { inningsId: iid } });
+      await prisma.partnership.deleteMany({ where: { inningsId: iid } });
+      await prisma.bowlingFigure.deleteMany({ where: { inningsId: iid } });
+      await prisma.battingScore.deleteMany({ where: { inningsId: iid } });
+    }
+    await prisma.ball.deleteMany({
+      where: { over: { inningsId: { in: inningsIds } } },
+    });
+    await prisma.over.deleteMany({ where: { inningsId: { in: inningsIds } } });
+    await prisma.innings.deleteMany({ where: { matchId: demoMatch.id } });
+  }
+
+  // Fetch players for both teams.
+  const hkPlayers = await prisma.player.findMany({
+    where: { teamId: hkTeam.id },
+  });
+  const stPlayers = await prisma.player.findMany({
+    where: { teamId: stTeam.id },
+  });
+
+  const byRole = (pool, role) =>
+    pool.find((p) => p.role === role) ?? pool[0];
+
+  const hkBatter1 = byRole(hkPlayers, 'BATTER');
+  const hkBatter2 = byRole(hkPlayers, 'ALL_ROUNDER');
+  const hkBowler = byRole(hkPlayers, 'BOWLER');
+  const stBatter1 = byRole(stPlayers, 'BATTER');
+  const stBatter2 = byRole(stPlayers, 'ALL_ROUNDER');
+  const stBowler = byRole(stPlayers, 'BOWLER');
+
+  // ── Innings 1: Harbour Kings bat first ─────────────────────────────────
+  console.log('[seed:phase2a] Creating innings 1 — Harbour Kings batting...');
+
+  const inn1 = await prisma.innings.create({
+    data: {
+      inningsNumber: 1,
+      matchId: demoMatch.id,
+      battingTeamId: hkTeam.id,
+      bowlingTeamId: stTeam.id,
+      totalRuns: 176,
+      totalWickets: 6,
+      totalOvers: 20.0,
+      totalExtras: 11,
+      byes: 2,
+      legByes: 3,
+      wides: 4,
+      noBalls: 2,
+      status: 'COMPLETED',
+    },
+  });
+
+  // Batting scores — HK
+  await prisma.battingScore.create({
+    data: {
+      inningsId: inn1.id, playerId: hkBatter1.id, battingPosition: 1,
+      runs: 68, ballsFaced: 45, fours: 7, sixes: 2, strikeRate: 151.11,
+      isNotOut: false, dismissalType: 'CAUGHT',
+      dismissedBy: stBowler.name, fielderName: stBatter2.name,
+    },
+  });
+  await prisma.battingScore.create({
+    data: {
+      inningsId: inn1.id, playerId: hkBatter2.id, battingPosition: 2,
+      runs: 42, ballsFaced: 35, fours: 4, sixes: 1, strikeRate: 120.0,
+      isNotOut: false, dismissalType: 'BOWLED', dismissedBy: stBowler.name,
+    },
+  });
+  await prisma.battingScore.create({
+    data: {
+      inningsId: inn1.id, playerId: hkBowler.id, battingPosition: 3,
+      runs: 31, ballsFaced: 22, fours: 3, sixes: 1, strikeRate: 140.91,
+      isNotOut: false, dismissalType: 'LBW', dismissedBy: stBowler.name,
+    },
+  });
+
+  // Bowling figures — ST (bowling team for innings 1)
+  await prisma.bowlingFigure.create({
+    data: {
+      inningsId: inn1.id, playerId: stBowler.id,
+      overs: 4.0, ballsBowled: 24, maidens: 0, runsConceded: 32,
+      wickets: 2, economy: 8.0, widesBowled: 1, noBallsBowled: 0,
+    },
+  });
+  await prisma.bowlingFigure.create({
+    data: {
+      inningsId: inn1.id, playerId: stBatter1.id,
+      overs: 4.0, ballsBowled: 24, maidens: 0, runsConceded: 35,
+      wickets: 1, economy: 8.75, widesBowled: 2, noBallsBowled: 1,
+    },
+  });
+  await prisma.bowlingFigure.create({
+    data: {
+      inningsId: inn1.id, playerId: stBatter2.id,
+      overs: 4.0, ballsBowled: 24, maidens: 0, runsConceded: 38,
+      wickets: 0, economy: 9.5, widesBowled: 1, noBallsBowled: 0,
+    },
+  });
+
+  // ── Innings 1 — Over 1 ────────────────────────────────────────────────
+  const ov1_1 = await prisma.over.create({
+    data: { inningsId: inn1.id, overNumber: 1, legalBallCount: 6,
+            totalRuns: 11, bowlerRuns: 11, wickets: 0, maiden: 0,
+            status: 'COMPLETED' },
+  });
+  await prisma.ball.createMany({
+    data: [
+      { overId: ov1_1.id, ballNumber: 1, legalBallNumber: 1, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBowler.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Pushed to mid-off for a quick single.' },
+      { overId: ov1_1.id, ballNumber: 2, legalBallNumber: 2, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBowler.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Good length on off, defended.' },
+      { overId: ov1_1.id, ballNumber: 3, legalBallNumber: null, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBowler.id, deliveryType: 'WIDE', batsmanRuns: 0, extras: 1, extrasType: 'wide', totalRuns: 1, commentaryText: 'Wide down the leg side.' },
+      { overId: ov1_1.id, ballNumber: 4, legalBallNumber: 3, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBowler.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'Driven through covers for four!' },
+      { overId: ov1_1.id, ballNumber: 5, legalBallNumber: 4, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBowler.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Turned to square leg.' },
+      { overId: ov1_1.id, ballNumber: 6, legalBallNumber: 5, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBowler.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'Pulled away to the midwicket boundary!' },
+      { overId: ov1_1.id, ballNumber: 7, legalBallNumber: 6, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBowler.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Dot ball to finish the over.' },
+    ],
+  });
+
+  // ── Innings 1 — Over 2 ────────────────────────────────────────────────
+  const ov1_2 = await prisma.over.create({
+    data: { inningsId: inn1.id, overNumber: 2, legalBallCount: 6,
+            totalRuns: 14, bowlerRuns: 14, wickets: 0, maiden: 0,
+            status: 'COMPLETED' },
+  });
+  await prisma.ball.createMany({
+    data: [
+      { overId: ov1_2.id, ballNumber: 1, legalBallNumber: 1, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBatter1.id, deliveryType: 'LEGAL', batsmanRuns: 6, totalRuns: 6, commentaryText: 'SIX! Launched over long-on!' },
+      { overId: ov1_2.id, ballNumber: 2, legalBallNumber: 2, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBatter1.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'FOUR! Edged past slip, races away.' },
+      { overId: ov1_2.id, ballNumber: 3, legalBallNumber: 3, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBatter1.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Beaten! Swing and a miss outside off.' },
+      { overId: ov1_2.id, ballNumber: 4, legalBallNumber: null, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBatter1.id, deliveryType: 'NO_BALL', batsmanRuns: 1, extras: 1, extrasType: 'no-ball', totalRuns: 2, commentaryText: 'No-ball! Overstepping, flicked to fine leg. Free hit next.' },
+      { overId: ov1_2.id, ballNumber: 5, legalBallNumber: 4, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter1.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Free hit — swing and a miss!' },
+      { overId: ov1_2.id, ballNumber: 6, legalBallNumber: 5, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter1.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Single to deep point.' },
+      { overId: ov1_2.id, ballNumber: 7, legalBallNumber: 6, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBatter1.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Pushed to cover, keeps the strike.' },
+    ],
+  });
+
+  // ── Innings 1 — Over 3 (wicket over) ──────────────────────────────────
+  const ov1_3 = await prisma.over.create({
+    data: { inningsId: inn1.id, overNumber: 3, legalBallCount: 6,
+            totalRuns: 9, bowlerRuns: 7, wickets: 1, maiden: 0,
+            status: 'COMPLETED' },
+  });
+  await prisma.ball.createMany({
+    data: [
+      { overId: ov1_3.id, ballNumber: 1, legalBallNumber: 1, strikerId: hkBatter1.id, nonStrikerId: hkBatter2.id, bowlerId: stBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Single to midwicket.' },
+      { overId: ov1_3.id, ballNumber: 2, legalBallNumber: 2, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 0, extras: 2, extrasType: 'bye', totalRuns: 2, commentaryText: 'Beaten! Keeper fumbles, they run two byes.' },
+      { overId: ov1_3.id, ballNumber: 3, legalBallNumber: 3, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'FOUR! Lofted over mid-off.' },
+      { overId: ov1_3.id, ballNumber: 4, legalBallNumber: 4, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Dot ball, tight line on middle.' },
+      { overId: ov1_3.id, ballNumber: 5, legalBallNumber: 5, strikerId: hkBatter2.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, isWicket: true, dismissalType: 'BOWLED', dismissedPlayerId: hkBatter2.id, commentaryText: 'BOWLED! Cleaned him up! Off stump goes cartwheeling.' },
+      { overId: ov1_3.id, ballNumber: 6, legalBallNumber: 6, strikerId: hkBowler.id, nonStrikerId: hkBatter1.id, bowlerId: stBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 2, totalRuns: 2, commentaryText: 'New batter gets off the mark with a couple through point.' },
+    ],
+  });
+
+  // Partnerships — innings 1
+  await prisma.partnership.create({
+    data: { inningsId: inn1.id, batter1Id: hkBatter1.id, batter2Id: hkBatter2.id,
+            runs: 68, ballsFaced: 38, wicketNumber: 1, startOver: 0.0, endOver: 2.5 },
+  });
+  await prisma.partnership.create({
+    data: { inningsId: inn1.id, batter1Id: hkBatter1.id, batter2Id: hkBowler.id,
+            runs: 51, ballsFaced: 32, startOver: 2.5 },
+  });
+
+  // Fall of wickets — innings 1
+  await prisma.fallOfWicket.create({
+    data: { inningsId: inn1.id, wicketNumber: 1, playerId: hkBatter2.id,
+            teamScore: 68, overNumber: 7.3 },
+  });
+
+  // ── Innings 2: Summit Titans chase ────────────────────────────────────
+  console.log('[seed:phase2a] Creating innings 2 — Summit Titans batting...');
+
+  const inn2 = await prisma.innings.create({
+    data: {
+      inningsNumber: 2,
+      matchId: demoMatch.id,
+      battingTeamId: stTeam.id,
+      bowlingTeamId: hkTeam.id,
+      totalRuns: 171,
+      totalWickets: 8,
+      totalOvers: 20.0,
+      totalExtras: 9,
+      byes: 1,
+      legByes: 2,
+      wides: 5,
+      noBalls: 1,
+      status: 'COMPLETED',
+    },
+  });
+
+  // Batting scores — ST
+  await prisma.battingScore.create({
+    data: {
+      inningsId: inn2.id, playerId: stBatter1.id, battingPosition: 1,
+      runs: 55, ballsFaced: 38, fours: 5, sixes: 2, strikeRate: 144.74,
+      isNotOut: false, dismissalType: 'CAUGHT',
+      dismissedBy: hkBowler.name, fielderName: hkBatter1.name,
+    },
+  });
+  await prisma.battingScore.create({
+    data: {
+      inningsId: inn2.id, playerId: stBatter2.id, battingPosition: 2,
+      runs: 37, ballsFaced: 29, fours: 3, sixes: 1, strikeRate: 127.59,
+      isNotOut: false, dismissalType: 'LBW', dismissedBy: hkBowler.name,
+    },
+  });
+  await prisma.battingScore.create({
+    data: {
+      inningsId: inn2.id, playerId: stBowler.id, battingPosition: 3,
+      runs: 24, ballsFaced: 18, fours: 2, sixes: 1, strikeRate: 133.33,
+      isNotOut: false, dismissalType: 'RUN_OUT', dismissedBy: hkBatter2.name,
+    },
+  });
+
+  // Bowling figures — HK (bowling team for innings 2)
+  await prisma.bowlingFigure.create({
+    data: {
+      inningsId: inn2.id, playerId: hkBowler.id,
+      overs: 4.0, ballsBowled: 24, maidens: 0, runsConceded: 28,
+      wickets: 2, economy: 7.0, widesBowled: 1, noBallsBowled: 0,
+    },
+  });
+  await prisma.bowlingFigure.create({
+    data: {
+      inningsId: inn2.id, playerId: hkBatter2.id,
+      overs: 4.0, ballsBowled: 24, maidens: 0, runsConceded: 34,
+      wickets: 1, economy: 8.5, widesBowled: 2, noBallsBowled: 1,
+    },
+  });
+  await prisma.bowlingFigure.create({
+    data: {
+      inningsId: inn2.id, playerId: hkBatter1.id,
+      overs: 4.0, ballsBowled: 24, maidens: 0, runsConceded: 41,
+      wickets: 0, economy: 10.25, widesBowled: 1, noBallsBowled: 0,
+    },
+  });
+
+  // ── Innings 2 — Over 1 ────────────────────────────────────────────────
+  const ov2_1 = await prisma.over.create({
+    data: { inningsId: inn2.id, overNumber: 1, legalBallCount: 6,
+            totalRuns: 10, bowlerRuns: 10, wickets: 0, maiden: 0,
+            status: 'COMPLETED' },
+  });
+  await prisma.ball.createMany({
+    data: [
+      { overId: ov2_1.id, ballNumber: 1, legalBallNumber: 1, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBowler.id, deliveryType: 'LEGAL', batsmanRuns: 2, totalRuns: 2, commentaryText: 'Clipped off the pads for two.' },
+      { overId: ov2_1.id, ballNumber: 2, legalBallNumber: 2, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBowler.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'FOUR! Beautiful cover drive.' },
+      { overId: ov2_1.id, ballNumber: 3, legalBallNumber: 3, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBowler.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Played back to the bowler.' },
+      { overId: ov2_1.id, ballNumber: 4, legalBallNumber: null, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBowler.id, deliveryType: 'WIDE', batsmanRuns: 0, extras: 1, extrasType: 'wide', totalRuns: 1, commentaryText: 'Wide outside off stump.' },
+      { overId: ov2_1.id, ballNumber: 5, legalBallNumber: 4, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBowler.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Single to deep square.' },
+      { overId: ov2_1.id, ballNumber: 6, legalBallNumber: 5, strikerId: stBatter2.id, nonStrikerId: stBatter1.id, bowlerId: hkBowler.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Turned to leg side for one.' },
+      { overId: ov2_1.id, ballNumber: 7, legalBallNumber: 6, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBowler.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Pushed to mid-on, keeps the strike.' },
+    ],
+  });
+
+  // ── Innings 2 — Over 2 (wicket over) ──────────────────────────────────
+  const ov2_2 = await prisma.over.create({
+    data: { inningsId: inn2.id, overNumber: 2, legalBallCount: 6,
+            totalRuns: 15, bowlerRuns: 15, wickets: 1, maiden: 0,
+            status: 'COMPLETED' },
+  });
+  await prisma.ball.createMany({
+    data: [
+      { overId: ov2_2.id, ballNumber: 1, legalBallNumber: 1, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 6, totalRuns: 6, commentaryText: 'SIX! Pulled over deep midwicket!' },
+      { overId: ov2_2.id, ballNumber: 2, legalBallNumber: 2, strikerId: stBatter1.id, nonStrikerId: stBatter2.id, bowlerId: hkBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 1, totalRuns: 1, commentaryText: 'Single to deep cover.' },
+      { overId: ov2_2.id, ballNumber: 3, legalBallNumber: 3, strikerId: stBatter2.id, nonStrikerId: stBatter1.id, bowlerId: hkBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'FOUR! Slashed over point.' },
+      { overId: ov2_2.id, ballNumber: 4, legalBallNumber: 4, strikerId: stBatter2.id, nonStrikerId: stBatter1.id, bowlerId: hkBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, commentaryText: 'Beaten! Good ball nipping away.' },
+      { overId: ov2_2.id, ballNumber: 5, legalBallNumber: 5, strikerId: stBatter2.id, nonStrikerId: stBatter1.id, bowlerId: hkBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 0, totalRuns: 0, isWicket: true, dismissalType: 'CAUGHT', dismissedPlayerId: stBatter2.id, fielderId: hkBatter1.id, commentaryText: 'OUT! Caught at deep midwicket! Holes out going for another big one.' },
+      { overId: ov2_2.id, ballNumber: 6, legalBallNumber: 6, strikerId: stBowler.id, nonStrikerId: stBatter1.id, bowlerId: hkBatter2.id, deliveryType: 'LEGAL', batsmanRuns: 4, totalRuns: 4, commentaryText: 'FOUR! New batter drives first ball through covers.' },
+    ],
+  });
+
+  // Partnerships — innings 2
+  await prisma.partnership.create({
+    data: { inningsId: inn2.id, batter1Id: stBatter1.id, batter2Id: stBatter2.id,
+            runs: 55, ballsFaced: 32, wicketNumber: 1, startOver: 0.0, endOver: 1.5 },
+  });
+  await prisma.partnership.create({
+    data: { inningsId: inn2.id, batter1Id: stBatter1.id, batter2Id: stBowler.id,
+            runs: 42, ballsFaced: 28, startOver: 1.5 },
+  });
+
+  // Fall of wickets — innings 2
+  await prisma.fallOfWicket.create({
+    data: { inningsId: inn2.id, wicketNumber: 1, playerId: stBatter2.id,
+            teamScore: 55, overNumber: 5.2 },
+  });
+
+  // ── Commentary log ─────────────────────────────────────────────────────
+  await prisma.commentary.createMany({
+    data: [
+      { matchId: demoMatch.id, inningsId: inn1.id, eventType: 'START_OF_OVER', overLabel: 'Over 1', text: 'Harbour Kings openers walk out. Fast bowler takes the new ball.', timestamp: demoMatch.startTime },
+      { matchId: demoMatch.id, inningsId: inn1.id, eventType: 'END_OF_OVER', overLabel: 'Over 1', text: 'End of over 1 — 11 runs, a solid start for the Kings.', timestamp: new Date(demoMatch.startTime.getTime() + 4 * 60 * 1000) },
+      { matchId: demoMatch.id, inningsId: inn1.id, eventType: 'WICKET', overLabel: 'Over 3', text: 'WICKET! HK lose their first — ALL_ROUNDER bowled for a well-made 42.', timestamp: new Date(demoMatch.startTime.getTime() + 12 * 60 * 1000) },
+      { matchId: demoMatch.id, inningsId: inn1.id, eventType: 'MILESTONE', overLabel: 'Over 5', text: 'FIFTY! HK opener brings up a half-century off just 32 balls.', timestamp: new Date(demoMatch.startTime.getTime() + 20 * 60 * 1000) },
+      { matchId: demoMatch.id, inningsId: inn1.id, eventType: 'INNINGS_BREAK', text: 'Innings break — Harbour Kings finish at 176/6 in 20 overs. Summit Titans need 177 to win.', timestamp: new Date(demoMatch.startTime.getTime() + 80 * 60 * 1000) },
+      { matchId: demoMatch.id, inningsId: inn2.id, eventType: 'START_OF_OVER', overLabel: 'Over 1', text: 'Summit Titans begin the chase. 177 needed from 20 overs.', timestamp: new Date(demoMatch.startTime.getTime() + 95 * 60 * 1000) },
+      { matchId: demoMatch.id, inningsId: inn2.id, eventType: 'WICKET', overLabel: 'Over 2', text: 'WICKET! ST lose their ALL_ROUNDER — caught in the deep for 37.', timestamp: new Date(demoMatch.startTime.getTime() + 105 * 60 * 1000) },
+      { matchId: demoMatch.id, inningsId: inn2.id, eventType: 'MILESTONE', overLabel: 'Over 4', text: 'FIFTY! ST opener reaches 50 — the chase is alive!', timestamp: new Date(demoMatch.startTime.getTime() + 115 * 60 * 1000) },
+      { matchId: demoMatch.id, eventType: 'MATCH_EVENT', text: 'Match over — Harbour Kings win by 5 runs! What a thriller!', timestamp: new Date(demoMatch.startTime.getTime() + 180 * 60 * 1000) },
+    ],
+  });
+
+  console.log('[seed:phase2a] Done ✅ — 2 innings, demo overs, balls, batting, bowling, partnerships, FOW, commentary.');
+}
+
 async function main() {
-  console.log('[seed] Clearing existing data...');
-  await prisma.match.deleteMany();
-  await prisma.player.deleteMany();
-  await prisma.team.deleteMany();
-  await prisma.tournament.deleteMany();
-  await prisma.venue.deleteMany();
-  await prisma.user.deleteMany();
+  const existingMatchCount = await prisma.match.count();
+
+  let teams, venues, tournaments, matches;
+
+  if (existingMatchCount === 0) {
+    console.log('[seed] Seeding Phase 1 data from scratch...');
+    await prisma.match.deleteMany();
+    await prisma.player.deleteMany();
+    await prisma.team.deleteMany();
+    await prisma.tournament.deleteMany();
+    await prisma.venue.deleteMany();
+    await prisma.user.deleteMany();
 
   // --- Demo users (one per role) ------------------------------------------
   console.log('[seed] Creating demo users...');
@@ -178,8 +522,13 @@ async function main() {
 
   for (const m of matches) await prisma.match.create({ data: m });
 
-  console.log('[seed] Done ✅');
-  console.log(`[seed] ${teams.length} teams, 30 players, ${tournaments.length} tournaments, ${matches.length} matches, ${venues.length} venues, 3 users.`);
+    console.log(`[seed] Phase 1: ${teams.length} teams, 30 players, ${tournaments.length} tournaments, ${matches.length} matches, ${venues.length} venues, 3 users.`);
+  } else {
+    console.log('[seed] Phase 1 data exists — preserving all of it.');
+  }
+
+  // Phase 2A scoring demo (idempotent — safe to re-run on every seed)
+  await seedPhase2A();
 }
 
 main()

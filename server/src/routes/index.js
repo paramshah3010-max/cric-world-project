@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import matchRoutes from './match.routes.js';
 import authRoutes from './auth.routes.js';
+import inningsRoutes from './innings.routes.js';
+import scoringRoutes from './scoring.routes.js';
 
 const router = Router();
 
@@ -11,5 +13,7 @@ router.get('/health', (req, res) => {
 
 router.use('/matches', matchRoutes);
 router.use('/auth', authRoutes);
+router.use('/', inningsRoutes);
+router.use('/', scoringRoutes);
 
 export default router;
