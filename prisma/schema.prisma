@@ -9,6 +9,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../server/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -47,21 +48,35 @@ model Team {
   players     Player[]
   homeMatches Match[]  @relation("HomeTeam")
   awayMatches Match[]  @relation("AwayTeam")
+
+  battingInnings Innings[] @relation("BattingInnings")
+  bowlingInnings Innings[] @relation("BowlingInnings")
 }
 
 // A player belonging to a team.
 model Player {
-  id        String   @id @default(cuid())
-  name      String
-  role      String // BATTER | BOWLER | ALL_ROUNDER | WICKET_KEEPER
+  id           String   @id @default(cuid())
+  name         String
+  role         String // BATTER | BOWLER | ALL_ROUNDER | WICKET_KEEPER
   battingStyle String?
   bowlingStyle String?
-  country   String?
-  jerseyNo  Int?
-  teamId    String
-  team      Team     @relation(fields: [teamId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  country      String?
+  jerseyNo     Int?
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  battingScores       BattingScore[]
+  bowlingFigures      BowlingFigure[]
+  strikerBalls        Ball[]          @relation("StrikerBalls")
+  nonStrikerBalls     Ball[]          @relation("NonStrikerBalls")
+  bowlerBalls         Ball[]          @relation("BowlerBalls")
+  dismissedBalls      Ball[]          @relation("DismissedPlayerBalls")
+  fielderBalls        Ball[]          @relation("FielderBalls")
+  batter1Partnerships Partnership[]   @relation("Batter1Partnerships")
+  batter2Partnerships Partnership[]   @relation("Batter2Partnerships")
+  fallOfWickets       FallOfWicket[]
 
   @@index([teamId])
 }
@@ -95,24 +110,24 @@ model Venue {
 // A single match. Scores are stored as simple summary fields for now; detailed
 // ball-by-ball scoring models will reference this Match later.
 model Match {
-  id           String      @id @default(cuid())
-  name         String // e.g. "Match 12 — Group A"
-  format       String // T20 | ODI | TEST
-  status       MatchStatus @default(UPCOMING)
-  startTime    DateTime
-  result       String?
+  id        String      @id @default(cuid())
+  name      String // e.g. "Match 12 — Group A"
+  format    String // T20 | ODI | TEST
+  status    MatchStatus @default(UPCOMING)
+  startTime DateTime
+  result    String?
 
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
 
-  venueId      String?
-  venue        Venue?     @relation(fields: [venueId], references: [id])
+  venueId String?
+  venue   Venue?  @relation(fields: [venueId], references: [id])
 
-  homeTeamId   String
-  homeTeam     Team       @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  homeTeamId String
+  homeTeam   Team   @relation("HomeTeam", fields: [homeTeamId], references: [id])
 
-  awayTeamId   String
-  awayTeam     Team       @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  awayTeamId String
+  awayTeam   Team   @relation("AwayTeam", fields: [awayTeamId], references: [id])
 
   // Simplified score summary (detailed innings come later).
   homeRuns     Int?
@@ -127,6 +142,9 @@ model Match {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  innings    Innings[]
+  commentary Commentary[]
+
   @@index([status])
   @@index([tournamentId])
 }
@@ -135,4 +153,281 @@ enum MatchStatus {
   LIVE
   UPCOMING
   COMPLETED
+}
+
+// ===========================================================================
+// PHASE 2A — Scoring enums
+// ===========================================================================
+
+enum InningsStatus {
+  YET_TO_BAT
+  IN_PROGRESS
+  DECLARED
+  ALL_OUT
+  COMPLETED
+}
+
+enum OverStatus {
+  IN_PROGRESS
+  COMPLETED
+  MAIDEN
+}
+
+enum DeliveryType {
+  LEGAL
+  WIDE
+  NO_BALL
+}
+
+enum DismissalType {
+  BOWLED
+  CAUGHT
+  LBW
+  RUN_OUT
+  STUMPED
+  HIT_WICKET
+  RETIRED_HURT
+  RETIRED_OUT
+  OBSTRUCTING_THE_FIELD
+  TIMED_OUT
+  HIT_THE_BALL_TWICE
+  OTHER
+}
+
+enum CommentaryEventType {
+  DELIVERY
+  WICKET
+  MILESTONE
+  START_OF_OVER
+  END_OF_OVER
+  INNINGS_BREAK
+  MATCH_EVENT
+}
+
+// ===========================================================================
+// PHASE 2A — Scoring models
+// ===========================================================================
+
+/// One team's batting innings. A T20 has 2 innings; a Test can have up to 4.
+model Innings {
+  id            String @id @default(cuid())
+  inningsNumber Int
+
+  matchId String
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  battingTeamId String
+  battingTeam   Team   @relation("BattingInnings", fields: [battingTeamId], references: [id])
+
+  bowlingTeamId String
+  bowlingTeam   Team   @relation("BowlingInnings", fields: [bowlingTeamId], references: [id])
+
+  totalRuns    Int           @default(0)
+  totalWickets Int           @default(0)
+  totalOvers   Float         @default(0)
+  totalExtras  Int           @default(0)
+  byes         Int           @default(0)
+  legByes      Int           @default(0)
+  wides        Int           @default(0)
+  noBalls      Int           @default(0)
+  penalties    Int           @default(0)
+  status       InningsStatus @default(YET_TO_BAT)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  overs          Over[]
+  battingScores  BattingScore[]
+  bowlingFigures BowlingFigure[]
+  partnerships   Partnership[]
+  fallOfWickets  FallOfWicket[]
+  commentary     Commentary[]
+
+  @@unique([matchId, inningsNumber])
+  @@index([matchId])
+  @@index([battingTeamId])
+  @@index([bowlingTeamId])
+}
+
+/// One over within an innings — up to 6 legal deliveries.
+model Over {
+  id             String     @id @default(cuid())
+  inningsId      String
+  innings        Innings    @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  overNumber     Int
+  legalBallCount Int        @default(0)
+  totalRuns      Int        @default(0)
+  bowlerRuns     Int        @default(0)
+  wickets        Int        @default(0)
+  maiden         Int        @default(0)
+  status         OverStatus @default(IN_PROGRESS)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  balls      Ball[]
+  commentary Commentary[]
+
+  @@unique([inningsId, overNumber])
+  @@index([inningsId])
+}
+
+/// Every delivery — the atomic unit of scoring truth.
+///
+/// Cricket rules encoded here:
+/// - WIDE / NO_BALL → legalBallNumber = null (they don't count toward the 6
+///   legal deliveries per over).
+/// - WIDE: batsmanRuns = 0, extras >= 1, extrasType = "wide".
+/// - NO_BALL: batsmanRuns can be > 0, extras >= 1, extrasType = "no-ball".
+///   The follow-up free-hit is a separate LEGAL Ball row.
+/// - BYES / LEG_BYES: batsmanRuns = 0, extras > 0, extrasType = "bye"|"leg-bye".
+///   These count toward team runs but NOT batter runs or bowler runs.
+/// - ballNumber is sequential WITHIN the over INCLUDING wides/no-balls.
+model Ball {
+  id              String @id @default(cuid())
+  overId          String
+  over            Over   @relation(fields: [overId], references: [id], onDelete: Cascade)
+  ballNumber      Int
+  legalBallNumber Int?
+
+  strikerId    String
+  striker      Player @relation("StrikerBalls", fields: [strikerId], references: [id])
+  nonStrikerId String
+  nonStriker   Player @relation("NonStrikerBalls", fields: [nonStrikerId], references: [id])
+  bowlerId     String
+  bowler       Player @relation("BowlerBalls", fields: [bowlerId], references: [id])
+
+  deliveryType DeliveryType
+  batsmanRuns  Int          @default(0)
+  extras       Int          @default(0)
+  extrasType   String?
+  totalRuns    Int          @default(0)
+
+  isWicket          Boolean        @default(false)
+  dismissalType     DismissalType?
+  dismissedPlayerId String?
+  dismissedPlayer   Player?        @relation("DismissedPlayerBalls", fields: [dismissedPlayerId], references: [id])
+  fielderId         String?
+  fielder           Player?        @relation("FielderBalls", fields: [fielderId], references: [id])
+
+  commentaryText String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  commentary Commentary[]
+
+  @@index([overId])
+  @@index([strikerId])
+  @@index([bowlerId])
+  @@index([dismissedPlayerId])
+}
+
+/// Per-player batting stats within one innings.
+model BattingScore {
+  id              String         @id @default(cuid())
+  inningsId       String
+  innings         Innings        @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  playerId        String
+  player          Player         @relation(fields: [playerId], references: [id])
+  battingPosition Int
+  runs            Int            @default(0)
+  ballsFaced      Int            @default(0)
+  fours           Int            @default(0)
+  sixes           Int            @default(0)
+  strikeRate      Float          @default(0)
+  dismissalType   DismissalType?
+  dismissedBy     String?
+  fielderName     String?
+  isNotOut        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([inningsId, playerId])
+  @@unique([inningsId, battingPosition])
+  @@index([inningsId])
+  @@index([playerId])
+}
+
+/// Per-player bowling figures within one innings.
+model BowlingFigure {
+  id            String   @id @default(cuid())
+  inningsId     String
+  innings       Innings  @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  playerId      String
+  player        Player   @relation(fields: [playerId], references: [id])
+  overs         Float    @default(0)
+  ballsBowled   Int      @default(0)
+  maidens       Int      @default(0)
+  runsConceded  Int      @default(0)
+  wickets       Int      @default(0)
+  economy       Float    @default(0)
+  widesBowled   Int      @default(0)
+  noBallsBowled Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([inningsId, playerId])
+  @@index([inningsId])
+  @@index([playerId])
+}
+
+/// A batting partnership between two players at the crease.
+model Partnership {
+  id           String   @id @default(cuid())
+  inningsId    String
+  innings      Innings  @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  batter1Id    String
+  batter1      Player   @relation("Batter1Partnerships", fields: [batter1Id], references: [id])
+  batter2Id    String
+  batter2      Player   @relation("Batter2Partnerships", fields: [batter2Id], references: [id])
+  runs         Int      @default(0)
+  ballsFaced   Int      @default(0)
+  wicketNumber Int?
+  startOver    Float?
+  endOver      Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([inningsId])
+  @@index([batter1Id])
+  @@index([batter2Id])
+}
+
+/// Fall of wicket — the traditional scorecard "FOW" column.
+model FallOfWicket {
+  id           String   @id @default(cuid())
+  inningsId    String
+  innings      Innings  @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  wicketNumber Int
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id])
+  teamScore    Int
+  overNumber   Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([inningsId, wicketNumber])
+  @@index([inningsId])
+}
+
+/// Commentary log — ball descriptions, milestones, and match events.
+model Commentary {
+  id        String              @id @default(cuid())
+  matchId   String
+  match     Match               @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  inningsId String?
+  innings   Innings?            @relation(fields: [inningsId], references: [id], onDelete: SetNull)
+  overId    String?
+  over      Over?               @relation(fields: [overId], references: [id], onDelete: SetNull)
+  ballId    String?
+  ball      Ball?               @relation(fields: [ballId], references: [id], onDelete: SetNull)
+  overLabel String?
+  text      String
+  eventType CommentaryEventType @default(DELIVERY)
+  timestamp DateTime            @default(now())
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([matchId, timestamp])
+  @@index([inningsId])
+  @@index([overId])
+  @@index([ballId])
 }

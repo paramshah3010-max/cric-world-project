@@ -5,23 +5,63 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   html {
     scroll-behavior: smooth;
   }
+
   body {
     @apply bg-charcoal-950 text-slate-300 antialiased;
-    background-image:
-      radial-gradient(55% 40% at 82% -10%, rgba(34, 231, 255, 0.09), transparent 60%),
-      radial-gradient(45% 40% at 0% 0%, rgba(233, 196, 106, 0.07), transparent 55%);
+    min-height: 100vh;
+    background:
+      radial-gradient(
+        circle at 15% 10%,
+        rgba(233, 196, 106, 0.08),
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at 85% 12%,
+        rgba(34, 231, 255, 0.07),
+        transparent 26%
+      ),
+      linear-gradient(180deg, #05070a 0%, #070b11 52%, #040609 100%);
     background-attachment: fixed;
   }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    opacity: 0.18;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.018) 1px,
+        transparent 1px
+      );
+    background-size: 64px 64px;
+    mask-image: radial-gradient(circle at center, black, transparent 82%);
+  }
+
   ::selection {
     @apply bg-gold-brand/30 text-white;
   }
+
   h1,
   h2,
   h3 {
     @apply font-display;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -30,68 +70,306 @@
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
-  /* Small uppercase label — the "luxury" eyebrow. */
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-luxe text-gold-brand/90;
+  }
+
+  .premium-page {
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .premium-hero-bg {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(3, 6, 10, 0.94) 0%,
+        rgba(3, 6, 10, 0.72) 44%,
+        rgba(3, 6, 10, 0.45) 72%,
+        rgba(3, 6, 10, 0.72) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(3, 6, 10, 0.18) 0%,
+        rgba(3, 6, 10, 0.48) 70%,
+        #05070a 100%
+      ),
+      url('./assets/images/stadium-bg.jpg');
+    background-position: center;
+    background-size: cover;
+  }
+
+  .premium-hero-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        circle at 18% 22%,
+        rgba(233, 196, 106, 0.16),
+        transparent 30%
+      ),
+      radial-gradient(
+        circle at 82% 18%,
+        rgba(34, 231, 255, 0.11),
+        transparent 28%
+      );
+    animation: auroraMove 14s ease-in-out infinite alternate;
+  }
+
+  .premium-hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(5, 7, 10, 0.14) 55%,
+        #05070a 100%
+      );
+  }
+
+  .luxury-navbar {
+    @apply border border-white/[0.1] backdrop-blur-luxury;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(19, 25, 34, 0.78),
+        rgba(7, 10, 15, 0.68)
+      );
+    box-shadow:
+      0 22px 65px rgba(0, 0, 0, 0.44),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  }
+
+  .luxury-glass {
+    @apply relative overflow-hidden border border-white/[0.08] bg-glass-panel backdrop-blur-premium;
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.48),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .luxury-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        115deg,
+        transparent 24%,
+        rgba(255, 255, 255, 0.07) 46%,
+        transparent 66%
+      );
+    transform: translateX(-130%);
+    transition: transform 900ms ease;
+  }
+
+  .luxury-glass:hover::before {
+    transform: translateX(130%);
+  }
+
+  .luxury-card {
+    @apply luxury-glass rounded-luxury;
+    transform-style: preserve-3d;
+    transition:
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 320ms ease,
+      box-shadow 320ms ease;
+  }
+
+  .luxury-card:hover {
+    transform: translateY(-7px) scale(1.012);
+    border-color: rgba(233, 196, 106, 0.28);
+    box-shadow:
+      0 32px 90px rgba(0, 0, 0, 0.58),
+      0 0 42px rgba(233, 196, 106, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .card {
+    @apply relative rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] shadow-luxe backdrop-blur-xl;
+    transition:
+      transform 280ms ease,
+      border-color 280ms ease,
+      box-shadow 280ms ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(233, 196, 106, 0.2);
+    box-shadow:
+      0 26px 70px rgba(0, 0, 0, 0.5),
+      0 0 24px rgba(233, 196, 106, 0.06);
   }
 
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold-brand/50 disabled:opacity-50;
   }
+
   .btn-primary {
-    @apply btn bg-gold-sheen text-charcoal-950 shadow-gold hover:brightness-105 hover:shadow-[0_0_40px_-6px_rgba(233,196,106,0.65)];
-  }
-  .btn-ghost {
-    @apply btn border border-white/10 bg-white/[0.03] text-slate-100 backdrop-blur hover:border-gold-brand/50 hover:text-white;
+    @apply btn bg-gold-sheen text-charcoal-950 shadow-gold;
+    border: 1px solid rgba(255, 240, 183, 0.46);
+    box-shadow:
+      0 14px 40px rgba(233, 196, 106, 0.23),
+      inset 0 1px 0 rgba(255, 255, 255, 0.62);
   }
 
-  /* Glass card with a hairline gradient border feel. */
-  .card {
-    @apply relative rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] shadow-luxe backdrop-blur-xl;
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.06);
+    box-shadow:
+      0 20px 50px rgba(233, 196, 106, 0.34),
+      0 0 32px rgba(233, 196, 106, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+
+  .btn-ghost {
+    @apply btn border border-white/10 bg-white/[0.035] text-slate-100 backdrop-blur-xl;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-ghost:hover {
+    transform: translateY(-3px);
+    border-color: rgba(233, 196, 106, 0.35);
+    background: rgba(255, 255, 255, 0.07);
+    color: white;
   }
 
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider;
   }
 
-  /* Gradient text used for hero / brand accents. */
+  .live-chip {
+    @apply chip border border-red-400/25 bg-red-400/10 text-red-300;
+    animation: livePulse 1.8s ease-in-out infinite;
+  }
+
   .text-gradient-gold {
     @apply bg-gold-sheen bg-clip-text text-transparent;
   }
+
   .text-gradient-cyan-gold {
     @apply bg-cyan-gold bg-clip-text text-transparent;
   }
 
-  /* Thin luxe divider. */
+  .text-gradient-luxury {
+    @apply bg-luxury-gold bg-clip-text text-transparent;
+  }
+
   .rule {
     @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+
+  .gold-border-glow {
+    box-shadow:
+      0 0 0 1px rgba(233, 196, 106, 0.18),
+      0 0 34px rgba(233, 196, 106, 0.1);
+  }
+
+  .hero-stat {
+    @apply rounded-2xl border border-white/[0.08] bg-black/20 px-5 py-4 text-center backdrop-blur-xl;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .skeleton {
     @apply relative overflow-hidden rounded-md bg-white/[0.05];
   }
+
   .skeleton::after {
     content: '';
     @apply absolute inset-0 -translate-x-full;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      );
     animation: shimmer 1.6s infinite;
   }
 }
 
 @layer utilities {
-  /* Subtle sheen swipe used on hover for premium surfaces. */
   .sheen {
     @apply pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit];
   }
+
   .sheen::before {
     content: '';
     position: absolute;
     inset: 0;
     transform: translateX(-120%);
-    background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70%);
+    background:
+      linear-gradient(
+        100deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.12) 50%,
+        transparent 70%
+      );
   }
+
   .group:hover .sheen::before {
     animation: sheen-slide 0.9s ease-out;
+  }
+
+  .gold-orb {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(233, 196, 106, 0.2);
+    filter: blur(75px);
+    pointer-events: none;
+  }
+
+  .cyan-orb {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(34, 231, 255, 0.12);
+    filter: blur(85px);
+    pointer-events: none;
+  }
+
+  .gold-light-streak {
+    position: absolute;
+    width: 65%;
+    height: 2px;
+    border-radius: 999px;
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(233, 196, 106, 0.22),
+        rgba(255, 240, 183, 0.96),
+        rgba(233, 196, 106, 0.22),
+        transparent
+      );
+    box-shadow: 0 0 28px rgba(233, 196, 106, 0.5);
+    animation: lightSweep 5.8s ease-in-out infinite;
+  }
+
+  .hover-3d {
+    transform-style: preserve-3d;
+    transition:
+      transform 280ms ease,
+      box-shadow 280ms ease;
+  }
+
+  .hover-3d:hover {
+    transform:
+      perspective(1000px)
+      rotateX(1.5deg)
+      rotateY(-1.5deg)
+      translateY(-6px);
   }
 }
 
@@ -100,12 +378,71 @@
     transform: translateX(100%);
   }
 }
+
 @keyframes sheen-slide {
   0% {
     transform: translateX(-120%);
   }
+
   60%,
   100% {
     transform: translateX(220%);
+  }
+}
+
+@keyframes auroraMove {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+
+  100% {
+    transform: translate3d(2%, 1%, 0) scale(1.08);
+  }
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 0.82;
+    box-shadow:
+      0 0 0 1px rgba(255, 77, 90, 0.18),
+      0 0 16px rgba(255, 77, 90, 0.1);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 1px rgba(255, 77, 90, 0.34),
+      0 0 28px rgba(255, 77, 90, 0.25);
+  }
+}
+
+@keyframes lightSweep {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateX(-20%) rotate(-7deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(48%) rotate(-7deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .premium-hero-bg {
+    background-position: 62% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
