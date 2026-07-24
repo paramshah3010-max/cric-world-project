@@ -1,18 +1,39 @@
 import { Link } from 'react-router-dom';
+import logoIcon from '../assets/images/logo-icon.png';
 
-// Original text-based CRIC WORLD wordmark. A gold seam-ball mark sits inside a
-// glass tile; "CRIC" in white, "WORLD" in the gold sheen accent.
-export default function Logo({ className = '' }: { className?: string }) {
+interface LogoProps {
+  className?: string;
+}
+
+export default function Logo({ className = '' }: LogoProps) {
   return (
-    <Link to="/" className={`group inline-flex items-center gap-2.5 ${className}`}>
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-gold-brand/40 bg-white/[0.04] shadow-gold">
-        <span className="relative h-3.5 w-3.5 rounded-full bg-gold-sheen shadow-[0_0_12px_2px_rgba(233,196,106,0.6)]">
-          <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-charcoal-950/50" />
-        </span>
-      </span>
-      <span className="text-lg font-extrabold tracking-tight font-display leading-none">
+    <Link
+      to="/"
+      aria-label="Cric World home"
+      className={`group inline-flex shrink-0 items-center gap-3 ${className}`}
+    >
+      <img
+        src={logoIcon}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="
+          h-14
+          w-14
+          shrink-0
+          object-contain
+          scale-125
+          drop-shadow-[0_0_14px_rgba(233,196,106,0.4)]
+          transition-all
+          duration-500
+          group-hover:scale-[1.35]
+          group-hover:drop-shadow-[0_0_24px_rgba(233,196,106,0.65)]
+        "
+      />
+
+      <span className="font-display text-xl font-extrabold leading-none tracking-tight">
         <span className="text-white">CRIC</span>
-        <span className="ml-1 text-gradient-gold">WORLD</span>
+        <span className="ml-1.5 text-gradient-gold">WORLD</span>
       </span>
     </Link>
   );
